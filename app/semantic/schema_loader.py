@@ -403,3 +403,4 @@ def get_state_value(state_term: str) -> str:
     """Get normalized state name."""
     return get_schema().get_state_value(state_term)
 
+
