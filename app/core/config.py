@@ -33,16 +33,25 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
     ]
 
-    # Database
+    # Database - Main application database (SQLite for now, can be changed to PostgreSQL)
     DATABASE_URL: Optional[str] = None
     DB_HOST: str = "localhost"
-    DB_PORT: int = 5432
+    DB_PORT: int = 5430  # Changed from 5432 to 5430 to match PostgreSQL port
     DB_NAME: str = "analytics_studio"
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "postgres"
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_ECHO: bool = False
+
+    # Analytics Database (analytics_llm) - For all reports (Sales Analytics, Stock Inventory, Gateway Analytics)
+    ANALYTICS_DB_HOST: str = "localhost"
+    ANALYTICS_DB_PORT: int = 5430
+    ANALYTICS_DB_NAME: str = "analytics_llm"
+    ANALYTICS_DB_USER: str = "postgres"
+    ANALYTICS_DB_PASSWORD: str = "root"
+    ANALYTICS_DB_POOL_SIZE: int = 5
+    ANALYTICS_DB_MAX_OVERFLOW: int = 10
 
     # Security
     SECRET_KEY: str = "change-me-in-production"
@@ -72,6 +81,14 @@ class Settings(BaseSettings):
         return (
             f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+
+    @property
+    def analytics_database_url(self) -> str:
+        """Construct analytics database URL from components."""
+        return (
+            f"postgresql+asyncpg://{self.ANALYTICS_DB_USER}:{self.ANALYTICS_DB_PASSWORD}"
+            f"@{self.ANALYTICS_DB_HOST}:{self.ANALYTICS_DB_PORT}/{self.ANALYTICS_DB_NAME}"
         )
 
     @property

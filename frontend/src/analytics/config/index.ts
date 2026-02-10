@@ -7,15 +7,21 @@
 
 export { primaryDistributorSalesConfig } from './primaryDistributorSales';
 export { salesAnalyticsConfig } from './salesAnalytics';
+export { stockInventoryConfig } from './stockInventory';
+export { gatewayAnalyticsConfig } from './gatewayAnalytics';
 
 // Export a registry of all configs for dynamic loading
 import { primaryDistributorSalesConfig } from './primaryDistributorSales';
 import { salesAnalyticsConfig } from './salesAnalytics';
+import { stockInventoryConfig } from './stockInventory';
+import { gatewayAnalyticsConfig } from './gatewayAnalytics';
 import type { ReportConfig } from '../types';
 
 export const reportConfigs: Record<string, ReportConfig> = {
   'primary-distributor-sales': primaryDistributorSalesConfig,
   'sales-analytics': salesAnalyticsConfig,
+  'stock-inventory': stockInventoryConfig,
+  'gateway-analytics': gatewayAnalyticsConfig,
 };
 
 export function getReportConfig(reportId: string): ReportConfig | undefined {

@@ -8,6 +8,7 @@ import {
   Calculator,
   ChevronRight,
   TrendingUp,
+  Package,
 } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
 
@@ -41,6 +42,8 @@ export default function Sidebar() {
       items: [
         { path: '/analytics/primary-distributor-sales', icon: TrendingUp, label: 'Distributor Sales (Demo)' },
         { path: '/analytics/sales-analytics', icon: BarChart3, label: 'Sales Analytics (Live)' },
+        { path: '/analytics/stock-inventory', icon: Package, label: 'Stock Inventory (Gateway)' },
+        { path: '/analytics/gateway-analytics', icon: BarChart3, label: 'Gateway Analytics' },
       ],
     },
   ];

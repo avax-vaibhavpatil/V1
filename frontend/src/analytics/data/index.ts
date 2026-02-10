@@ -92,7 +92,7 @@ interface ExportRequest {
 // Reports that use real PostgreSQL API
 // ============================================
 
-const API_REPORTS = ['sales-analytics'];
+const API_REPORTS = ['sales-analytics', 'stock-inventory', 'gateway-analytics'];
 
 function usesRealApi(reportId: string): boolean {
   return API_REPORTS.includes(reportId);
