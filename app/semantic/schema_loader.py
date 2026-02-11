@@ -32,8 +32,11 @@ class SemanticSchema:
     Provides helper methods for SQL generation and LLM prompts.
     """
     
-    # Default path to JSON file
-    DEFAULT_JSON_PATH = Path(__file__).parent.parent.parent / "sales_analytics.json"
+    # Default path to JSON file (in schemas subfolder)
+    DEFAULT_JSON_PATH = Path(__file__).parent / "schemas" / "sales_analytics.json"
+    
+    # Schemas directory for all semantic files
+    SCHEMAS_DIR = Path(__file__).parent / "schemas"
     
     def __init__(self, schema_data: dict):
         """Initialize with loaded schema data."""
@@ -116,6 +119,41 @@ class SemanticSchema:
             data = json.load(f)
         
         return cls(data)
+    
+    @classmethod
+    def load_by_name(cls, schema_name: str) -> "SemanticSchema":
+        """
+        Load semantic schema by name from the schemas folder.
+        
+        Args:
+            schema_name: Name of the schema file (without .json extension)
+                         e.g., "sales_analytics", "inventory", "orders"
+            
+        Returns:
+            SemanticSchema instance
+            
+        Example:
+            schema = SemanticSchema.load_by_name("sales_analytics")
+            schema = SemanticSchema.load_by_name("inventory")
+        """
+        schema_path = cls.SCHEMAS_DIR / f"{schema_name}.json"
+        return cls.load(str(schema_path))
+    
+    @classmethod
+    def list_available_schemas(cls) -> List[str]:
+        """
+        List all available schema files in the schemas folder.
+        
+        Returns:
+            List of schema names (without .json extension)
+        """
+        if not cls.SCHEMAS_DIR.exists():
+            return []
+        
+        return [
+            f.stem for f in cls.SCHEMAS_DIR.glob("*.json")
+            if f.is_file()
+        ]
     
     @classmethod
     @lru_cache(maxsize=1)

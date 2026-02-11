@@ -780,3 +780,128 @@ async def export_report(request: TableRequest):
             logger.error(f"Error exporting data: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
+
+# ============================================
+# AI Chat Endpoint
+# ============================================
+
+class ChatRequest(BaseModel):
+    """Request model for AI chat."""
+    question: str
+    filters: Optional[FilterState] = None
+    time: Optional[TimeState] = None
+    includeSql: bool = True
+    includeData: bool = False  # Default false to reduce response size
+
+
+class ChatMessageResponse(BaseModel):
+    """Response model for AI chat."""
+    status: str
+    answer: str
+    sql: Optional[str] = None
+    data: Optional[List[Dict[str, Any]]] = None
+    rowCount: int = 0
+    error: Optional[str] = None
+    timing: Dict[str, int] = {}
+    usage: Dict[str, Any] = {}
+
+
+@router.post("/sales-analytics/chat")
+async def chat_with_report(request: ChatRequest):
+    """
+    AI-powered chat endpoint for natural language queries.
+    
+    Ask questions in natural language and get answers based on the data.
+    
+    Examples:
+    - "Top 5 customers in Gujarat"
+    - "Total sales of building wires"
+    - "Who has negative margin?"
+    - "Compare building wires vs LT cables"
+    - "Monthly sales trend"
+    """
+    from app.services.chat_service import get_chat_service
+    
+    try:
+        chat_service = get_chat_service()
+        
+        # Convert filters to dict format for chat service
+        filters_dict = None
+        if request.filters or request.time:
+            filters_dict = {}
+            
+            if request.filters:
+                if request.filters.itemGroup and request.filters.itemGroup != "ALL":
+                    filters_dict["itemGroup"] = request.filters.itemGroup
+                if request.filters.material and request.filters.material != "ALL":
+                    filters_dict["material"] = request.filters.material
+                if request.filters.brand and request.filters.brand != "ALL":
+                    filters_dict["brand"] = request.filters.brand
+                if request.filters.customerState:
+                    filters_dict["customerState"] = ", ".join(request.filters.customerState)
+                if request.filters.industry:
+                    filters_dict["industry"] = ", ".join(request.filters.industry)
+                if request.filters.customerCategory and request.filters.customerCategory != "ALL":
+                    filters_dict["customerCategory"] = request.filters.customerCategory
+                if request.filters.customerType and request.filters.customerType != "ALL":
+                    filters_dict["customerType"] = request.filters.customerType
+                if request.filters.period:
+                    filters_dict["period"] = request.filters.period
+            
+            if request.time:
+                filters_dict["period"] = request.time.period
+                filters_dict["fiscalYear"] = request.time.fiscalYear
+        
+        # Call chat service
+        response = await chat_service.ask(
+            question=request.question,
+            filters=filters_dict,
+            include_sql=request.includeSql,
+            include_data=request.includeData,
+        )
+        
+        return response.to_dict()
+        
+    except Exception as e:
+        logger.error(f"Chat error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Chat service error: {str(e)}"
+        )
+
+
+@router.get("/sales-analytics/chat/health")
+async def chat_health_check():
+    """Check health of the AI chat service."""
+    from app.services.chat_service import get_chat_service
+    
+    try:
+        chat_service = get_chat_service()
+        health = await chat_service.health_check()
+        
+        return {
+            "status": "healthy" if health["overall"] else "unhealthy",
+            "components": health,
+        }
+        
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+        }
+
+
+@router.get("/sales-analytics/chat/stats")
+async def chat_stats():
+    """Get AI chat service statistics."""
+    from app.services.chat_service import get_chat_service
+    
+    try:
+        chat_service = get_chat_service()
+        return chat_service.get_stats()
+        
+    except Exception as e:
+        logger.error(f"Stats error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
