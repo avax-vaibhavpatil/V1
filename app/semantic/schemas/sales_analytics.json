@@ -1,0 +1,698 @@
+{
+  "tables": {
+    "public.sales_analytics": {
+      "description": "Sales Analytics fact table containing sales, quantity, profit, product, customer, geography, and organizational metrics. This table is the single source of truth for dashboards and LLM-driven analytics. All calculations must follow the semantic rules defined here.",
+      
+      "model": {
+        "grain": "transaction_date_product_customer",
+        "grain_description": "One row represents one sales transaction for one product sold to one customer on a specific date",
+        "primary_entity": "groupheadname",
+        "primary_entity_description": "Group Head / Distributor / Dealer - the main business entity for sales analysis"
+      },
+
+      "columns": {
+        "asondate": {
+          "type": "date",
+          "description": "Accounting sales date - the date when sale was recorded",
+          "aliases": ["date", "sales date", "transaction date", "as on date", "sale date", "record date"],
+          "constraints": { "filterable": true, "groupable": true },
+          "format": "date",
+          "sample_values": ["2026-01-15", "2025-12-31"]
+        },
+        "period": {
+          "type": "dimension",
+          "description": "Financial period in 'Month Year' format (e.g., 'January 2026')",
+          "aliases": ["month", "time period", "reporting period", "month year", "fiscal period"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["January 2026", "December 2025", "November 2025"]
+        },
+
+        "companycode": {
+          "type": "dimension",
+          "role": "code",
+          "description": "Company identifier code",
+          "aliases": ["company code", "org code"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "companyname": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Company name / Business unit name",
+          "aliases": ["company", "business unit", "organization", "org", "company name"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+
+        "branchcode": {
+          "type": "dimension",
+          "role": "code",
+          "description": "Branch identifier code",
+          "aliases": ["branch code", "location code"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "branchname": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Branch name / Office location",
+          "aliases": ["branch", "location", "office", "branch name", "branch location"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+
+        "regionalheadname": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Regional Head name - manager responsible for the region",
+          "aliases": ["regional head", "region head", "regional manager", "rm", "area head", "zonal head", "zone head", "area manager"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+
+        "groupheadname": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Group Head name - Distributor/Dealer/Partner (PRIMARY SALES ENTITY)",
+          "aliases": ["distributor", "dealer", "group head", "partner", "channel partner", "entity", "group", "distributor name", "sales entity", "primary entity"],
+          "constraints": { "filterable": true, "groupable": true },
+          "is_primary_entity": true
+        },
+
+        "handledbyname": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Salesperson / Sales Executive who handled the transaction",
+          "aliases": ["salesperson", "sales person", "handler", "sales rep", "sales executive", "se", "sales representative", "handled by", "salesman"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+
+        "customer_state": {
+          "type": "dimension",
+          "description": "Indian state where customer is located",
+          "aliases": ["state", "region", "geography", "customer region", "location", "area", "territory"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu", "Delhi", "Rajasthan"]
+        },
+
+        "customercode": {
+          "type": "dimension",
+          "role": "code",
+          "description": "Customer identifier code",
+          "aliases": ["customer code", "customer id", "client code", "account code", "cust code"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "customername": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Customer / Client name",
+          "aliases": ["customer", "client", "buyer", "account", "customer name", "client name"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "customer_category": {
+          "type": "dimension",
+          "description": "Customer category / rating (A, B, C, D, E, F, G)",
+          "aliases": ["customer segment", "category", "rating", "customer rating", "customer grade"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["A", "B", "C", "D", "E", "F", "G"]
+        },
+        "customer_type": {
+          "type": "dimension",
+          "description": "Customer type classification",
+          "aliases": ["customer classification", "client type", "type"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["Regular", "New", "Review"]
+        },
+
+        "industry": {
+          "type": "dimension",
+          "description": "Industry sector / segment of the customer",
+          "aliases": ["sector", "segment", "business industry", "vertical", "industry segment", "customer industry"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["DEALER   LOCAL", "DEALER   RETAILER", "CONTRACTOR   SMALL AND MEDIUM", "BUILDER", "INDUSTRIES", "OEM"]
+        },
+
+        "itemcode": {
+          "type": "dimension",
+          "role": "code",
+          "description": "Item / Product identifier code",
+          "aliases": ["item code", "product code", "sku", "material code", "product id"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "itemname": {
+          "type": "dimension",
+          "role": "name",
+          "description": "Item / Product name",
+          "aliases": ["product", "item", "product name", "material name", "sku name", "item name"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "itemgroup": {
+          "type": "dimension",
+          "description": "Product category / Item group (Building Wires, LT Cables, etc.)",
+          "aliases": ["product group", "category", "product category", "item category", "main group", "product line"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["CABLES : BUILDING WIRES", "CABLES : BUILDING WIRES C90", "CABLES : LT", "CABLES : LDC (FLEX ETC)", "CABLES : HT & EHV"]
+        },
+        "itemsubgroup": {
+          "type": "dimension",
+          "description": "Product subcategory",
+          "aliases": ["subcategory", "sub category", "sub group", "product subgroup", "item subgroup"],
+          "constraints": { "filterable": true, "groupable": true }
+        },
+        "brand": {
+          "type": "dimension",
+          "description": "Brand name of the product",
+          "aliases": ["product brand", "brand name", "make", "manufacturer"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["POLYCAB", "PRIMA POLYCAB", "ETIRA", "ANCHOR", "SCHNEIDER"]
+        },
+        "material": {
+          "type": "dimension",
+          "description": "Material type - Copper or Aluminium",
+          "aliases": ["material type", "conductor material", "raw material", "conductor"],
+          "constraints": { "filterable": true, "groupable": true },
+          "sample_values": ["Copper", "Aluminium"]
+        },
+
+        "saleamt_ason": {
+          "type": "measure",
+          "description": "Sales amount / Revenue in INR (Indian Rupees)",
+          "aliases": ["sales", "revenue", "sale amount", "sales amount", "turnover", "sales value", "sale value", "total sales", "sales figure", "amount"],
+          "aggregation": "sum",
+          "format": "currency",
+          "unit": "INR",
+          "constraints": { "filterable": false, "groupable": false }
+        },
+        "saleqty_ason": {
+          "type": "measure",
+          "description": "Sales quantity - units sold",
+          "aliases": ["quantity", "qty", "units", "volume", "sales quantity", "quantity sold", "units sold", "pieces", "items sold"],
+          "aggregation": "sum",
+          "format": "number",
+          "unit": "units",
+          "constraints": { "filterable": false, "groupable": false }
+        },
+        "profitloss_ason": {
+          "type": "measure",
+          "description": "Profit or Loss amount in INR",
+          "aliases": ["profit", "loss", "profit loss", "pnl", "p&l", "profit/loss", "profitability", "net profit", "earnings", "margin amount"],
+          "aggregation": "sum",
+          "format": "currency",
+          "unit": "INR",
+          "constraints": { "filterable": false, "groupable": false }
+        },
+        "metalweightsold_ason": {
+          "type": "measure",
+          "description": "Metal weight sold in KG/MT",
+          "aliases": ["weight", "metal weight", "weight sold", "metal sold", "kg sold", "tonnage", "metal quantity", "metal wt"],
+          "aggregation": "sum",
+          "format": "number",
+          "unit": "KG",
+          "constraints": { "filterable": false, "groupable": false }
+        },
+        "item_receivable": {
+          "type": "measure",
+          "description": "Outstanding receivables / dues amount in INR",
+          "aliases": ["receivables", "receivable", "outstanding", "dues", "pending payment", "credit", "accounts receivable", "ar", "debtors", "outstanding amount"],
+          "aggregation": "sum",
+          "format": "currency",
+          "unit": "INR",
+          "constraints": { "filterable": false, "groupable": false }
+        }
+      },
+
+      "dimensions": [
+        "period",
+        "companycode",
+        "companyname",
+        "branchcode",
+        "branchname",
+        "regionalheadname",
+        "groupheadname",
+        "handledbyname",
+        "customer_state",
+        "customercode",
+        "customername",
+        "customer_category",
+        "customer_type",
+        "industry",
+        "itemcode",
+        "itemname",
+        "itemgroup",
+        "itemsubgroup",
+        "brand",
+        "material"
+      ],
+
+      "measures": [
+        "saleamt_ason",
+        "saleqty_ason",
+        "profitloss_ason",
+        "metalweightsold_ason",
+        "item_receivable"
+      ],
+
+      "time_columns": ["asondate", "period"],
+
+      "derived_measures": [
+        {
+          "name": "total_sales",
+          "expression": "SUM(saleamt_ason)",
+          "type": "sum",
+          "description": "Total sales amount",
+          "aliases": ["total revenue", "sum of sales"]
+        },
+        {
+          "name": "total_quantity",
+          "expression": "SUM(saleqty_ason)",
+          "type": "sum",
+          "description": "Total quantity sold",
+          "aliases": ["total units", "total qty"]
+        },
+        {
+          "name": "total_profit",
+          "expression": "SUM(profitloss_ason)",
+          "type": "sum",
+          "description": "Total profit or loss",
+          "aliases": ["total pnl", "net profit"]
+        },
+        {
+          "name": "total_weight",
+          "expression": "SUM(metalweightsold_ason)",
+          "type": "sum",
+          "description": "Total metal weight sold",
+          "aliases": ["total metal", "total tonnage"]
+        },
+        {
+          "name": "total_receivables",
+          "expression": "SUM(item_receivable)",
+          "type": "sum",
+          "description": "Total outstanding receivables",
+          "aliases": ["total dues", "total outstanding"]
+        },
+        {
+          "name": "margin_percent",
+          "expression": "ROUND(SUM(profitloss_ason) * 100.0 / NULLIF(SUM(saleamt_ason), 0), 2)",
+          "type": "ratio",
+          "description": "Profit margin as percentage of sales",
+          "aliases": ["margin", "margin %", "profit margin", "margin percentage", "profitability %", "profit %"]
+        },
+        {
+          "name": "avg_sales_value",
+          "expression": "ROUND(SUM(saleamt_ason) / NULLIF(COUNT(*), 0), 2)",
+          "type": "avg",
+          "description": "Average sales per transaction",
+          "aliases": ["average sale", "avg transaction value", "average order value", "aov"]
+        },
+        {
+          "name": "avg_sales_per_customer",
+          "expression": "ROUND(SUM(saleamt_ason) / NULLIF(COUNT(DISTINCT customername), 0), 2)",
+          "type": "avg",
+          "description": "Average sales per customer",
+          "aliases": ["sales per customer", "customer average", "average customer value"]
+        },
+        {
+          "name": "sales_per_kg",
+          "expression": "ROUND(SUM(saleamt_ason) / NULLIF(SUM(metalweightsold_ason), 0), 2)",
+          "type": "ratio",
+          "description": "Sales amount per KG of metal",
+          "aliases": ["rate per kg", "price per kg", "sales per weight"]
+        },
+        {
+          "name": "receivables_percent",
+          "expression": "ROUND(SUM(item_receivable) * 100.0 / NULLIF(SUM(saleamt_ason), 0), 2)",
+          "type": "ratio",
+          "description": "Receivables as percentage of sales",
+          "aliases": ["receivable ratio", "credit ratio", "outstanding ratio", "ar ratio"]
+        },
+        {
+          "name": "customer_count",
+          "expression": "COUNT(DISTINCT customername)",
+          "type": "count",
+          "description": "Number of unique customers",
+          "aliases": ["number of customers", "customer count", "unique customers", "how many customers"]
+        },
+        {
+          "name": "distributor_count",
+          "expression": "COUNT(DISTINCT groupheadname)",
+          "type": "count",
+          "description": "Number of unique distributors/dealers",
+          "aliases": ["number of distributors", "dealer count", "entity count", "how many distributors"]
+        },
+        {
+          "name": "transaction_count",
+          "expression": "COUNT(*)",
+          "type": "count",
+          "description": "Number of transactions",
+          "aliases": ["number of transactions", "transaction count", "record count", "how many transactions"]
+        },
+        {
+          "name": "product_count",
+          "expression": "COUNT(DISTINCT itemname)",
+          "type": "count",
+          "description": "Number of unique products sold",
+          "aliases": ["number of products", "product count", "sku count", "how many products"]
+        }
+      ],
+
+      "business_term_mappings": {
+        "_description": "Maps business terms used by users to exact SQL expressions. CRITICAL for accurate query generation.",
+        
+        "product_categories": {
+          "_description": "Product category mappings - use exact SQL filter expressions",
+          
+          "building_wires": {
+            "display_name": "Building Wires",
+            "sql_filter": "itemgroup LIKE 'CABLES : BUILDING WIRES%'",
+            "description": "Building/House wiring cables (includes standard and C90 variants)",
+            "aliases": ["building wire", "house wire", "house wiring", "hw", "bw", "building cables", "domestic wire", "housing wire", "building wires"]
+          },
+          "lt_cables": {
+            "display_name": "LT Cables",
+            "sql_filter": "itemgroup = 'CABLES : LT'",
+            "description": "Low Tension power cables",
+            "aliases": ["lt cable", "low tension", "lt power cable", "ltc", "low tension cable", "lt", "lt cables"]
+          },
+          "flexibles": {
+            "display_name": "Flexibles",
+            "sql_filter": "itemgroup = 'CABLES : LDC (FLEX ETC)'",
+            "description": "Flexible cables and wires (LDC)",
+            "aliases": ["flexible", "flex", "flexible cable", "ldc", "flexible wire", "submersible cable", "multicore flexible", "flexibles"]
+          },
+          "ht_ehv": {
+            "display_name": "HT & EHV Cables",
+            "sql_filter": "itemgroup = 'CABLES : HT & EHV'",
+            "description": "High Tension and Extra High Voltage cables",
+            "aliases": ["ht cable", "ht cables", "ehv", "high tension", "ht", "ehv cable", "high voltage", "hv cable", "ht power cable", "ht ehv", "ht and ehv", "ht & ehv"]
+          },
+          "switches": {
+            "display_name": "Switches",
+            "sql_filter": "itemgroup = 'SWITCHES (WD)'",
+            "description": "Electrical switches (wiring devices)",
+            "aliases": ["switch", "switches", "wiring devices", "wd"]
+          },
+          "fans": {
+            "display_name": "Fans",
+            "sql_filter": "itemgroup = 'FANS'",
+            "description": "Ceiling fans and other fans",
+            "aliases": ["fan", "fans", "ceiling fan", "ceiling fans"]
+          },
+          "light_fixtures": {
+            "display_name": "Light Fixtures",
+            "sql_filter": "itemgroup = 'LIGHT FIXTURE'",
+            "description": "Lighting fixtures and luminaires",
+            "aliases": ["lights", "light", "lighting", "light fixture", "light fixtures", "luminaire", "lumes"]
+          },
+          "all_cables": {
+            "display_name": "All Cables",
+            "sql_filter": "itemgroup LIKE 'CABLES%'",
+            "description": "All cable products combined",
+            "aliases": ["cables", "all cables", "total cables", "cable products"]
+          }
+        },
+
+        "indian_states": {
+          "_description": "Indian state name mappings with common abbreviations",
+          
+          "maharashtra": { "value": "Maharashtra", "aliases": ["mh", "mumbai state", "pune state"] },
+          "gujarat": { "value": "Gujarat", "aliases": ["gj", "gujrat"] },
+          "karnataka": { "value": "Karnataka", "aliases": ["ka", "bangalore state", "bengaluru state"] },
+          "tamil_nadu": { "value": "Tamil Nadu", "aliases": ["tn", "tamilnadu", "chennai state"] },
+          "andhra_pradesh": { "value": "Andhra Pradesh", "aliases": ["ap", "andhra"] },
+          "telangana": { "value": "Telangana", "aliases": ["ts", "hyderabad state"] },
+          "kerala": { "value": "Kerala", "aliases": ["kl"] },
+          "rajasthan": { "value": "Rajasthan", "aliases": ["rj"] },
+          "madhya_pradesh": { "value": "Madhya Pradesh", "aliases": ["mp"] },
+          "uttar_pradesh": { "value": "Uttar Pradesh", "aliases": ["up"] },
+          "west_bengal": { "value": "West Bengal", "aliases": ["wb", "kolkata state"] },
+          "delhi": { "value": "Delhi", "aliases": ["ncr", "new delhi", "delhi ncr"] },
+          "punjab": { "value": "Punjab", "aliases": ["pb"] },
+          "haryana": { "value": "Haryana", "aliases": ["hr", "gurgaon state"] },
+          "bihar": { "value": "Bihar", "aliases": ["br"] },
+          "odisha": { "value": "Odisha", "aliases": ["or", "orissa"] },
+          "jharkhand": { "value": "Jharkhand", "aliases": ["jh"] },
+          "chhattisgarh": { "value": "Chhattisgarh", "aliases": ["cg", "chattisgarh"] },
+          "assam": { "value": "Assam", "aliases": ["as"] },
+          "goa": { "value": "Goa", "aliases": ["ga"] }
+        },
+
+        "materials": {
+          "_description": "Material type mappings",
+          
+          "copper": { "value": "Copper", "aliases": ["cu", "copper wire", "copper cable"] },
+          "aluminium": { "value": "Aluminium", "aliases": ["al", "aluminum", "aluminium wire", "aluminium cable"] }
+        },
+
+        "brands": {
+          "_description": "Brand name mappings",
+          
+          "polycab": { "value": "POLYCAB", "aliases": ["polycab", "poly"] },
+          "prima_polycab": { "value": "PRIMA POLYCAB", "aliases": ["prima", "prima polycab"] },
+          "etira": { "value": "ETIRA", "aliases": ["etira"] },
+          "anchor": { "value": "ANCHOR", "aliases": ["anchor"] },
+          "schneider": { "value": "SCHNEIDER", "aliases": ["schneider"] },
+          "crompton": { "value": "CROMPTON", "aliases": ["crompton"] },
+          "philips": { "value": "PHILIPS", "aliases": ["philips"] }
+        },
+
+        "customer_categories": {
+          "_description": "Customer rating/category mappings",
+          
+          "a_category": { "value": "A", "aliases": ["a rated", "category a", "a class", "top rated"] },
+          "b_category": { "value": "B", "aliases": ["b rated", "category b", "b class"] },
+          "c_category": { "value": "C", "aliases": ["c rated", "category c", "c class"] },
+          "d_category": { "value": "D", "aliases": ["d rated", "category d", "d class"] },
+          "e_category": { "value": "E", "aliases": ["e rated", "category e", "e class"] },
+          "f_category": { "value": "F", "aliases": ["f rated", "category f", "f class"] },
+          "g_category": { "value": "G", "aliases": ["g rated", "category g", "g class", "lowest rated"] }
+        },
+
+        "customer_types": {
+          "_description": "Customer type mappings",
+          
+          "regular": { "value": "Regular", "aliases": ["regular customer", "existing customer", "repeat customer"] },
+          "new": { "value": "New", "aliases": ["new customer", "first time", "new account"] },
+          "review": { "value": "Review", "aliases": ["under review", "review customer"] }
+        },
+
+        "industry_segments": {
+          "_description": "Industry/segment mappings",
+          
+          "dealer_local": { "value": "DEALER   LOCAL", "aliases": ["local dealer", "local"] },
+          "dealer_retailer": { "value": "DEALER   RETAILER", "aliases": ["retailer", "retail dealer"] },
+          "dealer_upcountry": { "value": "DEALER   UP COUNTRY", "aliases": ["upcountry dealer", "up country"] },
+          "contractor_small": { "value": "CONTRACTOR   SMALL AND MEDIUM", "aliases": ["small contractor", "sme contractor", "small medium contractor"] },
+          "contractor_large": { "value": "CONTRACTOR   REGIONAL AND NATIONAL", "aliases": ["large contractor", "national contractor", "regional contractor"] },
+          "builder": { "value": "BUILDER", "aliases": ["builder", "real estate", "construction"] },
+          "industries": { "value": "INDUSTRIES", "aliases": ["industrial", "industry", "manufacturing"] },
+          "institutions": { "value": "INSTITUTIONS", "aliases": ["institution", "institutional"] },
+          "oem": { "value": "O.E.M", "aliases": ["oem", "original equipment manufacturer"] },
+          "exports": { "value": "EXPORTS", "aliases": ["export", "exports", "international"] },
+          "panel_builder": { "value": "PANEL BUILDER", "aliases": ["panel builder", "panel"] },
+          "government": { "value": "GOVT.ORGANISATION", "aliases": ["government", "govt", "public sector"] }
+        }
+      },
+
+      "language_mappings": {
+        "_description": "Natural language to SQL operator/function mappings",
+        
+        "comparison_operators": {
+          "more than": ">",
+          "greater than": ">",
+          "above": ">",
+          "over": ">",
+          "exceeding": ">",
+          "higher than": ">",
+          "more": ">",
+          
+          "less than": "<",
+          "below": "<",
+          "under": "<",
+          "lower than": "<",
+          "fewer than": "<",
+          
+          "equal to": "=",
+          "equals": "=",
+          "exactly": "=",
+          "is": "=",
+          
+          "at least": ">=",
+          "minimum": ">=",
+          "no less than": ">=",
+          
+          "at most": "<=",
+          "maximum": "<=",
+          "up to": "<=",
+          "no more than": "<=",
+          
+          "not": "!=",
+          "not equal": "!=",
+          "except": "NOT IN",
+          "excluding": "NOT IN",
+          "other than": "!="
+        },
+
+        "ranking_terms": {
+          "top": { "order": "DESC", "limit": true },
+          "best": { "order": "DESC", "limit": true },
+          "highest": { "order": "DESC", "limit": true },
+          "leading": { "order": "DESC", "limit": true },
+          "largest": { "order": "DESC", "limit": true },
+          "maximum": { "order": "DESC", "limit": true },
+          "most": { "order": "DESC", "limit": true },
+          
+          "bottom": { "order": "ASC", "limit": true },
+          "worst": { "order": "ASC", "limit": true },
+          "lowest": { "order": "ASC", "limit": true },
+          "smallest": { "order": "ASC", "limit": true },
+          "minimum": { "order": "ASC", "limit": true },
+          "least": { "order": "ASC", "limit": true },
+          "fewest": { "order": "ASC", "limit": true }
+        },
+
+        "aggregation_terms": {
+          "total": "SUM",
+          "sum": "SUM",
+          "overall": "SUM",
+          "aggregate": "SUM",
+          "combined": "SUM",
+          
+          "average": "AVG",
+          "avg": "AVG",
+          "mean": "AVG",
+          
+          "count": "COUNT",
+          "number of": "COUNT",
+          "how many": "COUNT",
+          
+          "max": "MAX",
+          "highest": "MAX",
+          "maximum": "MAX",
+          
+          "min": "MIN",
+          "lowest": "MIN",
+          "minimum": "MIN"
+        },
+
+        "time_terms": {
+          "this month": "current_month",
+          "last month": "previous_month",
+          "this year": "current_year",
+          "last year": "previous_year",
+          "ytd": "year_to_date",
+          "year to date": "year_to_date",
+          "mtd": "month_to_date",
+          "month to date": "month_to_date",
+          "qtd": "quarter_to_date",
+          "quarter to date": "quarter_to_date"
+        },
+
+        "grouping_terms": {
+          "by state": "GROUP BY customer_state",
+          "by region": "GROUP BY customer_state",
+          "by customer": "GROUP BY customername",
+          "by distributor": "GROUP BY groupheadname",
+          "by dealer": "GROUP BY groupheadname",
+          "by product": "GROUP BY itemname",
+          "by category": "GROUP BY itemgroup",
+          "by brand": "GROUP BY brand",
+          "by month": "GROUP BY period",
+          "by period": "GROUP BY period",
+          "by salesperson": "GROUP BY handledbyname",
+          "by branch": "GROUP BY branchname",
+          "by industry": "GROUP BY industry",
+          "by material": "GROUP BY material"
+        }
+      },
+
+      "quality_rules": [
+        {
+          "name": "loss_transaction_flag",
+          "expression": "CASE WHEN profitloss_ason < 0 THEN 1 ELSE 0 END",
+          "description": "Flags loss-making transactions (profit < 0)",
+          "aliases": ["loss making", "negative profit", "loss transaction"]
+        },
+        {
+          "name": "high_value_sale_flag",
+          "expression": "CASE WHEN saleamt_ason > 100000 THEN 1 ELSE 0 END",
+          "description": "Flags high-value sales (> ₹1 Lakh)",
+          "aliases": ["high value", "large sale", "big order"]
+        },
+        {
+          "name": "negative_margin_flag",
+          "expression": "CASE WHEN profitloss_ason < 0 AND saleamt_ason > 0 THEN 1 ELSE 0 END",
+          "description": "Flags transactions with negative margin",
+          "aliases": ["negative margin", "loss margin"]
+        },
+        {
+          "name": "high_receivable_flag",
+          "expression": "CASE WHEN item_receivable > saleamt_ason * 0.5 THEN 1 ELSE 0 END",
+          "description": "Flags high receivables (> 50% of sales)",
+          "aliases": ["high outstanding", "high credit"]
+        }
+      ],
+
+      "time_intelligence": {
+        "fiscal_year_start_month": 4,
+        "fiscal_year_description": "Indian Financial Year (April to March)",
+        "supported_periods": ["MTD", "QTD", "YTD", "Previous Month", "Previous Year"],
+        "rules": {
+          "MTD": "asondate >= date_trunc('month', CURRENT_DATE)",
+          "QTD": "asondate >= date_trunc('quarter', CURRENT_DATE)",
+          "YTD": "asondate >= make_date(CASE WHEN EXTRACT(MONTH FROM CURRENT_DATE) >= 4 THEN EXTRACT(YEAR FROM CURRENT_DATE)::int ELSE EXTRACT(YEAR FROM CURRENT_DATE)::int - 1 END, 4, 1)",
+          "previous_month": "period = to_char(CURRENT_DATE - INTERVAL '1 month', 'Month YYYY')",
+          "current_month": "period = to_char(CURRENT_DATE, 'Month YYYY')"
+        }
+      },
+
+      "common_questions": {
+        "_description": "Common question patterns with SQL hints for the chatbot",
+        
+        "patterns": [
+          {
+            "intent": "top_n_entities",
+            "examples": ["top 5 customers", "best distributors", "leading dealers"],
+            "sql_pattern": "SELECT {entity}, SUM(saleamt_ason) as total_sales FROM sales_analytics GROUP BY {entity} ORDER BY total_sales DESC LIMIT {n}"
+          },
+          {
+            "intent": "sales_by_category",
+            "examples": ["sales by product category", "category wise sales", "sales breakdown by category"],
+            "sql_pattern": "SELECT itemgroup, SUM(saleamt_ason) as total_sales FROM sales_analytics GROUP BY itemgroup ORDER BY total_sales DESC"
+          },
+          {
+            "intent": "sales_by_state",
+            "examples": ["sales by state", "state wise sales", "regional sales"],
+            "sql_pattern": "SELECT customer_state, SUM(saleamt_ason) as total_sales FROM sales_analytics WHERE customer_state IS NOT NULL GROUP BY customer_state ORDER BY total_sales DESC"
+          },
+          {
+            "intent": "margin_analysis",
+            "examples": ["margin by product", "profit margin", "which products have best margin"],
+            "sql_pattern": "SELECT {dimension}, SUM(saleamt_ason) as sales, SUM(profitloss_ason) as profit, ROUND(SUM(profitloss_ason)*100.0/NULLIF(SUM(saleamt_ason),0), 2) as margin_pct FROM sales_analytics GROUP BY {dimension} ORDER BY margin_pct DESC"
+          },
+          {
+            "intent": "negative_margin",
+            "examples": ["who has negative margin", "loss making distributors", "negative profit entities"],
+            "sql_pattern": "SELECT {entity}, SUM(saleamt_ason) as sales, SUM(profitloss_ason) as profit FROM sales_analytics GROUP BY {entity} HAVING SUM(profitloss_ason) < 0 ORDER BY profit ASC"
+          },
+          {
+            "intent": "comparison",
+            "examples": ["compare building wires vs lt cables", "building wires versus flexibles"],
+            "sql_pattern": "Use CASE WHEN for category comparison with SUM aggregations"
+          },
+          {
+            "intent": "trend",
+            "examples": ["monthly sales trend", "sales over time", "month wise trend"],
+            "sql_pattern": "SELECT period, SUM(saleamt_ason) as total_sales FROM sales_analytics GROUP BY period ORDER BY period"
+          }
+        ]
+      },
+
+      "metadata": {
+        "version": "2.0",
+        "owner": "data_analytics_team",
+        "description": "Comprehensive AI-safe semantic layer for Sales Analytics supporting dashboards and LLM-based querying",
+        "last_updated": "2026-02-09",
+        "verified": true,
+        "column_count": 25,
+        "measure_count": 5,
+        "dimension_count": 20
+      }
+    }
+  }
+}
+

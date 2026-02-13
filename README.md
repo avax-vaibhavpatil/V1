@@ -348,7 +348,7 @@ $ cd /home/avaxpro16/Desktop/V1 && uv run uvicorn main:app --reload --host 0.0.0
 
 
 
-
+   
 
 def merge_sorted_array(a, b):
    i,j=0,0
@@ -369,3 +369,40 @@ def merge_sorted_array(a, b):
       result.append(b[j])
 
    return result
+
+   🐍 Backend Requirements
+Component	Version
+Python	>=3.11
+FastAPI	0.128.0
+SQLAlchemy	2.0.46
+Uvicorn	0.24.0+
+
+
+⚛️ Frontend Requirements
+Component	Version
+Node.js	>=18.x (20.x preferred)
+React	18.2.0
+TypeScript	5.2.2
+Vite	5.0.8
+TailwindCSS	3.3.6
+
+🗄️ Database & Cache
+Component	Version
+PostgreSQL	12+ (15+ recommended)
+Redis	6.x+ (7.x recommended)
+
+🤖 External Services
+Service	Details
+OpenAI API	gpt-4o-mini model
+
+🌐 Ports
+Service	Port
+Backend API	8000
+Frontend Dev	3000
+PostgreSQL	5432
+Redis	6379
+
+🐳 Docker Base Images
+Purpose	Image
+Backend	python:3.11-slim
+Frontend Build	node:20-alpine
