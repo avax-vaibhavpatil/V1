@@ -212,13 +212,13 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
     try {
       // Call the AI API
       const response = await askQuestion(text, filters, time);
-      
-      // Add assistant message
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
+    
+    // Add assistant message
+    const assistantMessage: Message = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
         content: response.answer,
-        timestamp: new Date(),
+      timestamp: new Date(),
         sql: response.sql,
         timing: {
           sqlGenerationMs: response.timing.sqlGenerationMs,
@@ -227,9 +227,9 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
         },
         status: response.status === 'success' ? 'success' : 
                 response.status === 'no_results' ? 'no_results' : 'error',
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
+    };
+    
+    setMessages(prev => [...prev, assistantMessage]);
       
     } catch (error) {
       // Add error message
@@ -243,7 +243,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
       
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsTyping(false);
+    setIsTyping(false);
     }
   }, [input, filters, time]);
   
@@ -393,7 +393,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                         ? 'bg-gray-800 text-white' 
                         : message.status === 'error' 
                           ? 'bg-red-500 text-white'
-                          : 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white'
+                        : 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white'
                     }`}>
                       {message.role === 'user' ? (
                         <User className="w-4 h-4" />
@@ -411,7 +411,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                           ? 'bg-gray-800 text-white rounded-tr-md'
                           : message.status === 'error'
                             ? 'bg-red-50 border border-red-200 text-red-700 rounded-tl-md'
-                            : 'bg-white border border-gray-100 text-gray-700 rounded-tl-md shadow-sm'
+                          : 'bg-white border border-gray-100 text-gray-700 rounded-tl-md shadow-sm'
                       }`}>
                         {message.role === 'user' ? (
                           message.content
@@ -462,10 +462,10 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
                         <span className="text-xs text-gray-400">Querying database...</span>
                       </div>

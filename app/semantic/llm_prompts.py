@@ -106,6 +106,14 @@ SYSTEM_PROMPT = """You are an expert SQL analyst for a Sales Analytics system. Y
 8. **Format currency** - Round to 2 decimal places for amounts
 9. **Period filter format** - Period column uses 'Month YYYY' format (e.g., 'January 2026')
 10. **Case-insensitive LIKE** - Use ILIKE for text searches
+11. **⚠️ NEVER USE UNION** - NEVER use UNION or UNION ALL in any query. It causes syntax errors.
+    - For "highest AND lowest" questions: Return ALL rows with ORDER BY DESC (first row = highest, last row = lowest)
+    - For comparisons: Use a single query with all data, NOT multiple combined queries
+12. **Simple approach wins** - A simple GROUP BY + ORDER BY is ALWAYS better than UNION/subqueries
+13. **⚠️ ALWAYS use NULLS LAST** - When using ORDER BY DESC, ALWAYS add NULLS LAST to avoid NULL values appearing first:
+    - WRONG: `ORDER BY total_sales DESC`
+    - CORRECT: `ORDER BY total_sales DESC NULLS LAST`
+14. **Filter NULL aggregates** - For "top" queries, add `HAVING SUM(column) IS NOT NULL` to exclude groups with no data
 
 ## OUTPUT FORMAT
 Return ONLY the SQL query. No explanations, no markdown code blocks, just the raw SQL.
@@ -126,7 +134,8 @@ EXAMPLE_QA_PAIRS: List[Dict[str, str]] = [
        ROUND(SUM(profitloss_ason) * 100.0 / NULLIF(SUM(saleamt_ason), 0), 2) AS margin_pct
 FROM sales_analytics
 GROUP BY groupheadname
-ORDER BY total_sales DESC
+HAVING SUM(saleamt_ason) IS NOT NULL
+ORDER BY total_sales DESC NULLS LAST
 LIMIT 5"""
     },
     {
@@ -149,7 +158,7 @@ LIMIT 10"""
 FROM sales_analytics
 WHERE handledbyname IS NOT NULL
 GROUP BY handledbyname
-ORDER BY total_revenue DESC
+ORDER BY total_revenue DESC NULLS LAST
 LIMIT 5"""
     },
     
@@ -163,7 +172,7 @@ LIMIT 5"""
 FROM sales_analytics
 WHERE customer_state IS NOT NULL
 GROUP BY customer_state
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
     {
         "question": "Top customers in Gujarat",
@@ -185,7 +194,7 @@ LIMIT 10"""
 FROM sales_analytics
 WHERE customer_state IN ('Maharashtra', 'Karnataka')
 GROUP BY customer_state
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
     
     # ========== PRODUCT CATEGORY ANALYSIS ==========
@@ -207,7 +216,7 @@ WHERE itemgroup LIKE 'CABLES : BUILDING WIRES%'"""
        SUM(metalweightsold_ason) AS total_weight_kg
 FROM sales_analytics
 GROUP BY itemgroup
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
     {
         "question": "Compare building wires vs LT cables sales",
@@ -227,7 +236,7 @@ GROUP BY
         WHEN itemgroup LIKE 'CABLES : BUILDING WIRES%' THEN 'Building Wires'
         WHEN itemgroup = 'CABLES : LT' THEN 'LT Cables'
     END
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
     {
         "question": "Top 5 products in flexibles category",
@@ -276,7 +285,7 @@ LIMIT 10"""
 FROM sales_analytics
 WHERE brand IS NOT NULL
 GROUP BY brand
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
     
     # ========== TIME-BASED ANALYSIS ==========
@@ -300,6 +309,30 @@ LIMIT 12"""
        COUNT(DISTINCT groupheadname) AS distributor_count
 FROM sales_analytics
 WHERE period = 'January 2026'"""
+    },
+    {
+        "question": "Which month has highest and lowest sales",
+        "sql": """SELECT period,
+       SUM(saleamt_ason) AS total_sales
+FROM sales_analytics
+GROUP BY period
+ORDER BY total_sales DESC NULLS LAST"""
+    },
+    {
+        "question": "Highest and lowest performing month",
+        "sql": """SELECT period,
+       SUM(saleamt_ason) AS total_sales
+FROM sales_analytics
+GROUP BY period
+ORDER BY total_sales DESC NULLS LAST"""
+    },
+    {
+        "question": "Best and worst month for sales",
+        "sql": """SELECT period,
+       SUM(saleamt_ason) AS total_sales
+FROM sales_analytics
+GROUP BY period
+ORDER BY total_sales DESC NULLS LAST"""
     },
     
     # ========== AGGREGATION QUERIES ==========
@@ -339,7 +372,7 @@ FROM sales_analytics"""
 FROM sales_analytics
 WHERE material IN ('Copper', 'Aluminium')
 GROUP BY material
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
     
     # ========== RECEIVABLES ANALYSIS ==========
@@ -366,7 +399,7 @@ LIMIT 10"""
 FROM sales_analytics
 WHERE industry IS NOT NULL
 GROUP BY industry
-ORDER BY total_sales DESC"""
+ORDER BY total_sales DESC NULLS LAST"""
     },
 ]
 
