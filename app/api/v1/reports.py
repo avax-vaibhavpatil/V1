@@ -23,8 +23,8 @@ settings = get_settings()
 # Database Connection - analytics-llm
 # ============================================
 
-# Connection to the analytics-llm PostgreSQL database
-ANALYTICS_DB_URL = "postgresql+asyncpg://postgres:root@localhost:5430/analytics-llm"
+# Connection to the analytics_llm PostgreSQL database (uses .env config)
+ANALYTICS_DB_URL = settings.database_url
 
 analytics_engine = create_async_engine(
     ANALYTICS_DB_URL,

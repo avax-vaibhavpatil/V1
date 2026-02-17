@@ -82,13 +82,15 @@ function getCategoryLabel(key: string): string {
   return cat?.label || key;
 }
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: number | undefined | null): string {
+  if (value == null || isNaN(value)) return '₹0.00 Cr';
   if (value >= 100) return `₹${value.toFixed(0)} Cr`;
   if (value >= 10) return `₹${value.toFixed(1)} Cr`;
   return `₹${value.toFixed(2)} Cr`;
 }
 
-function formatPercent(value: number): string {
+function formatPercent(value: number | undefined | null): string {
+  if (value == null || isNaN(value)) return 'N/A';
   const sign = value > 0 ? '+' : '';
   return `${sign}${value.toFixed(1)}%`;
 }
@@ -124,9 +126,11 @@ function calculateStats(values: number[]): { sum: number; avg: number; min: numb
 function analyzeTopPerformers(ctx: AnalysisContext, count: number = 5): AnalysisResult {
   const top = getTopN(ctx.rows, 'overall_actualSales', count);
   
-  const listItems = top.map((row, i) => 
-    `${i + 1}. **${row.entityName}** - ${formatCurrency(row.overall_actualSales as number)} (Growth: ${formatPercent(row.overall_growthPct as number)})`
-  ).join('\n');
+  const listItems = top.map((row, i) => {
+    const sales = row.overall_actualSales as number | undefined;
+    const growth = (row.overall_growthPct ?? row.overall_margin) as number | undefined;
+    return `${i + 1}. **${row.entityName || 'Unknown'}** - ${formatCurrency(sales)} (${growth != null ? `Margin: ${formatPercent(growth)}` : 'Growth: N/A'})`;
+  }).join('\n');
   
   return {
     answer: `📊 **Top ${count} Performers by Total Sales:**\n\n${listItems}\n\n💡 These entities contribute significantly to the overall sales volume.`,
@@ -139,9 +143,11 @@ function analyzeTopPerformers(ctx: AnalysisContext, count: number = 5): Analysis
 function analyzeBottomPerformers(ctx: AnalysisContext, count: number = 5): AnalysisResult {
   const bottom = getTopN(ctx.rows, 'overall_actualSales', count, true);
   
-  const listItems = bottom.map((row, i) => 
-    `${i + 1}. **${row.entityName}** - ${formatCurrency(row.overall_actualSales as number)} (Growth: ${formatPercent(row.overall_growthPct as number)})`
-  ).join('\n');
+  const listItems = bottom.map((row, i) => {
+    const sales = row.overall_actualSales as number | undefined;
+    const growth = (row.overall_growthPct ?? row.overall_margin) as number | undefined;
+    return `${i + 1}. **${row.entityName || 'Unknown'}** - ${formatCurrency(sales)} (${growth != null ? `Margin: ${formatPercent(growth)}` : 'Growth: N/A'})`;
+  }).join('\n');
   
   return {
     answer: `📉 **Bottom ${count} Performers by Total Sales:**\n\n${listItems}\n\n⚠️ These entities may need attention or support to improve performance.`,
