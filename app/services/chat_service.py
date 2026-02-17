@@ -25,6 +25,7 @@ from datetime import datetime
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
+from app.core.config import get_settings
 from app.core.logging_config import get_logger
 from app.services.llm_service import LLMService, get_llm_service, LLMResponse
 from app.services.sql_validator import SQLValidator, validate_sql, ValidationResult
@@ -36,11 +37,9 @@ logger = get_logger(__name__)
 # Configuration
 # =============================================================================
 
-# Database connection (same as reports.py)
-ANALYTICS_DB_URL = "postgresql+asyncpg://postgres:root@localhost:5430/analytics-llm"
-
+# Database connection - use same URL as main app (from config / .env)
 analytics_engine = create_async_engine(
-    ANALYTICS_DB_URL,
+    get_settings().database_url,
     pool_size=5,
     max_overflow=10,
     pool_pre_ping=True,

@@ -16,5 +16,8 @@ aiosqlite>=0.19.0
 # Database Migrations
 alembic>=1.13.0
 
+# LLM / Chat
+openai>=1.0.0
+
 # Testing & Scripts
 requests>=2.31.0
