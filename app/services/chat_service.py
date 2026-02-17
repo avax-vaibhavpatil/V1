@@ -64,6 +64,32 @@ class ChatStatus(Enum):
     ERROR = "error"
 
 
+class VisualizationType(Enum):
+    """Types of visualizations that can be rendered."""
+    NONE = "none"
+    PIE = "pie"
+    BAR = "bar"
+    DONUT = "donut"
+
+
+@dataclass
+class VisualizationData:
+    """Data for rendering a visualization."""
+    type: VisualizationType
+    title: str
+    data: List[Dict[str, Any]]
+    total: float = 0.0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for API response."""
+        return {
+            "type": self.type.value,
+            "title": self.title,
+            "data": self.data,
+            "total": self.total,
+        }
+
+
 @dataclass
 class ChatResponse:
     """Response from the chat service."""
@@ -73,6 +99,9 @@ class ChatResponse:
     data: Optional[List[Dict[str, Any]]] = None
     row_count: int = 0
     error: Optional[str] = None
+    
+    # Visualization data (for comparison queries)
+    visualization: Optional[VisualizationData] = None
     
     # Timing info
     sql_generation_time_ms: int = 0
@@ -96,6 +125,7 @@ class ChatResponse:
             "data": self.data,
             "rowCount": self.row_count,
             "error": self.error,
+            "visualization": self.visualization.to_dict() if self.visualization else None,
             "timing": {
                 "sqlGenerationMs": self.sql_generation_time_ms,
                 "sqlExecutionMs": self.sql_execution_time_ms,
@@ -115,6 +145,186 @@ class ChatResponse:
 # =============================================================================
 
 import re
+
+# =============================================================================
+# Comparison Query Detection and Visualization
+# =============================================================================
+
+# Keywords that indicate a comparison query
+COMPARISON_KEYWORDS = [
+    "compare", "comparison", "versus", "vs", "vs.", 
+    "difference between", "breakdown", "distribution",
+    "split", "proportion", "share", "percentage",
+    "between", "against", "and"  # "X and Y sales"
+]
+
+# Patterns for comparison queries
+COMPARISON_PATTERNS = [
+    r"compare\s+(.+?)\s+(?:and|vs\.?|versus|with)\s+(.+?)(?:\s+sales|\s+revenue|\s+performance|$)",
+    r"(.+?)\s+vs\.?\s+(.+?)(?:\s+sales|\s+revenue|\s+performance|$)",
+    r"breakdown\s+(?:of\s+)?(.+?)(?:\s+by\s+|\s+and\s+)",
+    r"distribution\s+(?:of\s+)?(.+)",
+    r"(.+?)\s+(?:and|&)\s+(.+?)\s+(?:sales|revenue|comparison)",
+]
+
+
+def detect_comparison_query(question: str) -> bool:
+    """
+    Detect if a question is asking for a comparison.
+    
+    Args:
+        question: User's natural language question
+        
+    Returns:
+        True if this appears to be a comparison query
+    """
+    question_lower = question.lower()
+    
+    # Check for explicit comparison keywords
+    for keyword in COMPARISON_KEYWORDS:
+        if keyword in question_lower:
+            # Additional check: must have at least 2 things being compared
+            # Look for "and", "vs", "versus" to confirm multiple items
+            if any(conj in question_lower for conj in ["and", "vs", "versus", "&", ","]):
+                return True
+            # Single item breakdown/distribution is also a comparison visualization
+            if keyword in ["breakdown", "distribution", "split", "proportion", "share"]:
+                return True
+    
+    # Check regex patterns
+    for pattern in COMPARISON_PATTERNS:
+        if re.search(pattern, question_lower):
+            return True
+    
+    return False
+
+
+def build_comparison_visualization(
+    question: str,
+    results: List[Dict[str, Any]],
+) -> Optional[VisualizationData]:
+    """
+    Build visualization data from query results for comparison queries.
+    
+    Automatically detects the label and value columns from the results.
+    
+    Args:
+        question: Original user question
+        results: Query results from database
+        
+    Returns:
+        VisualizationData if comparison data can be built, None otherwise
+    """
+    if not results or len(results) == 0:
+        return None
+    
+    # Need at least some data to compare
+    if len(results) < 1:
+        return None
+    
+    # Get column names from first row
+    columns = list(results[0].keys())
+    
+    if len(columns) < 2:
+        return None
+    
+    # Heuristics to identify label vs value columns
+    # Label column: typically string/category (first non-numeric column)
+    # Value column: typically numeric (sum, total, revenue, sales, etc.)
+    
+    label_col = None
+    value_col = None
+    
+    # Priority names for value columns
+    value_priority = [
+        "total", "sum", "sales", "revenue", "amount", "value", "quantity",
+        "count", "net_sales", "gross_sales", "total_sales", "total_revenue",
+        "net_amount", "gross_amount", "total_amount", "sales_amount"
+    ]
+    
+    # Find value column by priority or by being numeric
+    for priority_name in value_priority:
+        for col in columns:
+            if priority_name in col.lower():
+                value_col = col
+                break
+        if value_col:
+            break
+    
+    # If no priority match, find first numeric column
+    if not value_col:
+        for col in columns:
+            sample_value = results[0].get(col)
+            if isinstance(sample_value, (int, float)) and sample_value is not None:
+                value_col = col
+                break
+    
+    # Find label column (first non-value, non-numeric looking column)
+    for col in columns:
+        if col != value_col:
+            sample_value = results[0].get(col)
+            if isinstance(sample_value, str) or col != value_col:
+                label_col = col
+                break
+    
+    # Fallback: use first two columns
+    if not label_col:
+        label_col = columns[0]
+    if not value_col:
+        value_col = columns[1] if len(columns) > 1 else columns[0]
+    
+    # Build visualization data with percentages
+    total = sum(float(row.get(value_col, 0) or 0) for row in results)
+    
+    if total == 0:
+        return None
+    
+    viz_data = []
+    for row in results:
+        label = str(row.get(label_col, "Unknown"))
+        value = float(row.get(value_col, 0) or 0)
+        percentage = round((value / total) * 100, 1) if total > 0 else 0
+        
+        viz_data.append({
+            "label": label,
+            "value": value,
+            "percentage": percentage,
+        })
+    
+    # Sort by value descending for better visualization
+    viz_data.sort(key=lambda x: x["value"], reverse=True)
+    
+    # Generate title from question
+    title = generate_visualization_title(question, label_col, value_col)
+    
+    return VisualizationData(
+        type=VisualizationType.PIE,
+        title=title,
+        data=viz_data,
+        total=total,
+    )
+
+
+def generate_visualization_title(question: str, label_col: str, value_col: str) -> str:
+    """Generate a clean title for the visualization."""
+    # Clean up column names for display
+    label_display = label_col.replace("_", " ").title()
+    value_display = value_col.replace("_", " ").title()
+    
+    # Try to extract meaningful title from question
+    question_lower = question.lower()
+    
+    if "compare" in question_lower:
+        return f"{value_display} Comparison"
+    elif "breakdown" in question_lower:
+        return f"{value_display} Breakdown by {label_display}"
+    elif "distribution" in question_lower:
+        return f"{value_display} Distribution"
+    elif "vs" in question_lower or "versus" in question_lower:
+        return f"{value_display} Comparison"
+    else:
+        return f"{value_display} by {label_display}"
+
 
 def fix_sql_syntax(sql: str) -> str:
     """
@@ -382,12 +592,23 @@ class ChatService:
         self.successful_questions += 1
         logger.info(f"Question answered successfully in {total_time}ms")
         
+        # =====================================================================
+        # Step 6: Check for Comparison Query and Build Visualization
+        # =====================================================================
+        visualization = None
+        if detect_comparison_query(question) and results:
+            logger.info("Detected comparison query, building visualization")
+            visualization = build_comparison_visualization(question, results)
+            if visualization:
+                logger.info(f"Built {visualization.type.value} visualization with {len(visualization.data)} items")
+        
         response = ChatResponse(
             status=ChatStatus.SUCCESS,
             answer=answer,
             sql=sql,
             data=results if include_data else None,
             row_count=row_count,
+            visualization=visualization,
             sql_generation_time_ms=sql_gen_time,
             sql_execution_time_ms=sql_exec_time,
             answer_formatting_time_ms=format_time,

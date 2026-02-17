@@ -34,6 +34,19 @@ import {
 // Types
 // ============================================
 
+interface VisualizationDataItem {
+  label: string;
+  value: number;
+  percentage: number;
+}
+
+interface VisualizationData {
+  type: 'pie' | 'bar' | 'donut' | 'none';
+  title: string;
+  data: VisualizationDataItem[];
+  total: number;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -46,6 +59,7 @@ interface Message {
     totalMs: number;
   };
   status?: 'success' | 'error' | 'no_results';
+  visualization?: VisualizationData;
 }
 
 interface FilterState {
@@ -77,6 +91,7 @@ interface ChatApiResponse {
   data?: any[];
   rowCount: number;
   error?: string;
+  visualization?: VisualizationData;
   timing: {
     sqlGenerationMs: number;
     sqlExecutionMs: number;
@@ -130,6 +145,156 @@ function parseMarkdown(text: string): string {
     // Paragraphs
     .replace(/\n\n/g, '</p><p class="mt-2">')
     .replace(/\n/g, '<br/>');
+}
+
+// ============================================
+// Pie Chart Component
+// ============================================
+
+const PIE_COLORS = [
+  '#8b5cf6', // Purple
+  '#06b6d4', // Cyan
+  '#f59e0b', // Amber
+  '#10b981', // Emerald
+  '#f43f5e', // Rose
+  '#6366f1', // Indigo
+  '#84cc16', // Lime
+  '#ec4899', // Pink
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+];
+
+interface PieChartProps {
+  data: VisualizationDataItem[];
+  title: string;
+  total: number;
+}
+
+function PieChart({ data, title, total }: PieChartProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  
+  // Calculate pie slices
+  const size = 140;
+  const center = size / 2;
+  const radius = 55;
+  
+  let cumulativeAngle = -90; // Start from top
+  
+  const slices = data.map((item, index) => {
+    const angle = (item.percentage / 100) * 360;
+    const startAngle = cumulativeAngle;
+    const endAngle = cumulativeAngle + angle;
+    cumulativeAngle = endAngle;
+    
+    // Convert angles to radians
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    
+    // Calculate arc points
+    const x1 = center + radius * Math.cos(startRad);
+    const y1 = center + radius * Math.sin(startRad);
+    const x2 = center + radius * Math.cos(endRad);
+    const y2 = center + radius * Math.sin(endRad);
+    
+    // Large arc flag (1 if angle > 180)
+    const largeArc = angle > 180 ? 1 : 0;
+    
+    // Path for the slice
+    const path = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+    
+    return {
+      path,
+      color: PIE_COLORS[index % PIE_COLORS.length],
+      ...item,
+      index,
+    };
+  });
+
+  // Format currency
+  const formatValue = (value: number) => {
+    if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+    if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+    if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`;
+    return `₹${value.toFixed(0)}`;
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-100 shadow-sm mt-3">
+      {/* Title */}
+      <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">{title}</h4>
+      
+      <div className="flex items-center gap-4">
+        {/* Pie Chart SVG */}
+        <div className="relative flex-shrink-0">
+          <svg width={size} height={size} className="transform -rotate-0">
+            {slices.map((slice) => (
+              <path
+                key={slice.index}
+                d={slice.path}
+                fill={slice.color}
+                stroke="white"
+                strokeWidth="2"
+                className="transition-all duration-200 cursor-pointer"
+                style={{
+                  opacity: hoveredIndex === null || hoveredIndex === slice.index ? 1 : 0.4,
+                  transform: hoveredIndex === slice.index ? 'scale(1.05)' : 'scale(1)',
+                  transformOrigin: 'center',
+                }}
+                onMouseEnter={() => setHoveredIndex(slice.index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+            ))}
+            {/* Center circle for donut effect */}
+            <circle cx={center} cy={center} r={30} fill="white" />
+            {/* Center text */}
+            <text
+              x={center}
+              y={center - 6}
+              textAnchor="middle"
+              className="text-[10px] fill-gray-500 font-medium"
+            >
+              Total
+            </text>
+            <text
+              x={center}
+              y={center + 8}
+              textAnchor="middle"
+              className="text-xs fill-gray-800 font-bold"
+            >
+              {formatValue(total)}
+            </text>
+          </svg>
+        </div>
+        
+        {/* Legend */}
+        <div className="flex-1 space-y-1.5 max-h-[140px] overflow-y-auto">
+          {slices.map((slice) => (
+            <div
+              key={slice.index}
+              className={`flex items-center gap-2 px-2 py-1 rounded-lg transition-all duration-200 cursor-pointer ${
+                hoveredIndex === slice.index ? 'bg-gray-100' : ''
+              }`}
+              onMouseEnter={() => setHoveredIndex(slice.index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: slice.color }}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-gray-700 truncate">
+                  {slice.label}
+                </div>
+                <div className="text-[10px] text-gray-500">
+                  {formatValue(slice.value)} ({slice.percentage}%)
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ============================================
@@ -227,6 +392,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
         },
         status: response.status === 'success' ? 'success' : 
                 response.status === 'no_results' ? 'no_results' : 'error',
+      visualization: response.visualization,
     };
     
     setMessages(prev => [...prev, assistantMessage]);
@@ -449,6 +615,15 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                         <div className="mt-2 p-2 bg-gray-900 rounded-lg text-xs font-mono text-gray-300 overflow-x-auto">
                           <pre className="whitespace-pre-wrap">{message.sql}</pre>
                         </div>
+                      )}
+                      
+                      {/* Visualization (Pie Chart) */}
+                      {message.visualization && message.visualization.type === 'pie' && message.visualization.data.length > 0 && (
+                        <PieChart
+                          data={message.visualization.data}
+                          title={message.visualization.title}
+                          total={message.visualization.total}
+                        />
                       )}
                     </div>
                   </div>
