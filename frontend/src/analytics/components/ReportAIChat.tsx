@@ -382,16 +382,16 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
     const assistantMessage: Message = {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
-      content: response.answer,
+        content: response.answer,
       timestamp: new Date(),
-      sql: response.sql,
-      timing: {
-        sqlGenerationMs: response.timing.sqlGenerationMs,
-        sqlExecutionMs: response.timing.sqlExecutionMs,
-        totalMs: response.timing.totalMs,
-      },
-      status: response.status === 'success' ? 'success' : 
-              response.status === 'no_results' ? 'no_results' : 'error',
+        sql: response.sql,
+        timing: {
+          sqlGenerationMs: response.timing.sqlGenerationMs,
+          sqlExecutionMs: response.timing.sqlExecutionMs,
+          totalMs: response.timing.totalMs,
+        },
+        status: response.status === 'success' ? 'success' : 
+                response.status === 'no_results' ? 'no_results' : 'error',
       visualization: response.visualization,
     };
     
