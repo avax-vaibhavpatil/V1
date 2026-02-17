@@ -59,10 +59,10 @@ export default function FilterBar({
           <select
             value={pendingTime.fiscalYear}
             onChange={(e) => onTimeChange({ fiscalYear: e.target.value })}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             {fiscalYearOptions.map(fy => (
-              <option key={fy.value} value={fy.value}>{fy.label}</option>
+              <option key={fy.value} value={fy.value} className="text-gray-900">{fy.label}</option>
             ))}
           </select>
         </div>
@@ -73,10 +73,10 @@ export default function FilterBar({
           <select
             value={pendingTime.period}
             onChange={(e) => onTimeChange({ period: e.target.value })}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             {periodOptions.map(p => (
-              <option key={p.value} value={p.value}>{p.label}</option>
+              <option key={p.value} value={p.value} className="text-gray-900">{p.label}</option>
             ))}
           </select>
         </div>
@@ -104,10 +104,10 @@ export default function FilterBar({
           <select
             value={pendingToggles.metricMode}
             onChange={(e) => onToggleChange('metricMode', e.target.value)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             {filterOptions.metricModes.map(mode => (
-              <option key={mode.value} value={mode.value}>{mode.label}</option>
+              <option key={mode.value} value={mode.value} className="text-gray-900">{mode.label}</option>
             ))}
           </select>
         </div>
@@ -196,6 +196,11 @@ function AdvancedFilterDrawer({
   onClear,
   onReset,
 }: AdvancedFilterDrawerProps) {
+  // Get filters that should be shown in advanced drawer (multiselect and select, not tabs/chips)
+  const advancedFilters = config.filters.filter(f => 
+    f.ui === 'multiselect' || f.ui === 'select'
+  );
+  
   return (
     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
       <div className="flex items-center justify-between mb-4">
@@ -217,52 +222,42 @@ function AdvancedFilterDrawer({
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Zone Filter */}
-        <FilterSelect
-          label="Zone"
-          value={pendingFilters.zone}
-          options={filterOptions.zones}
-          onChange={(value) => onFilterChange('zone', value)}
-          placeholder="All Zones"
-        />
-        
-        {/* State Filter (dependent on zone) */}
-        <FilterMultiSelect
-          label="State"
-          value={pendingFilters.state as string[] | undefined}
-          options={getStateOptions(pendingFilters.zone as string | undefined)}
-          onChange={(value) => onFilterChange('state', value)}
-          placeholder="All States"
-        />
-        
-        {/* Channel Type Filter */}
-        <FilterSelect
-          label="Channel Type"
-          value={pendingFilters.channelType}
-          options={filterOptions.channelTypes}
-          onChange={(value) => onFilterChange('channelType', value)}
-          placeholder="All Channels"
-        />
-        
-        {/* Entity Type Filter */}
-        <FilterSelect
-          label="Entity Type"
-          value={pendingFilters.entityType}
-          options={filterOptions.entityTypes}
-          onChange={(value) => onFilterChange('entityType', value)}
-          placeholder="All Entities"
-        />
-        
-        {/* Category Filter */}
-        <FilterSelect
-          label="Category"
-          value={pendingFilters.category}
-          options={filterOptions.categories}
-          onChange={(value) => onFilterChange('category', value)}
-          placeholder="All Categories"
-        />
-      </div>
+      {advancedFilters.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {advancedFilters.map(filter => {
+            const filterValue = pendingFilters[filter.key as keyof typeof pendingFilters];
+            
+            if (filter.ui === 'multiselect') {
+              return (
+                <FilterMultiSelect
+                  key={filter.key}
+                  label={filter.label}
+                  value={Array.isArray(filterValue) ? filterValue : (filterValue ? [filterValue as string] : undefined)}
+                  options={filter.options || []}
+                  onChange={(value) => onFilterChange(filter.key, value)}
+                  placeholder={filter.placeholder || `Select ${filter.label.toLowerCase()}...`}
+                />
+              );
+            } else if (filter.ui === 'select') {
+              return (
+                <FilterSelect
+                  key={filter.key}
+                  label={filter.label}
+                  value={Array.isArray(filterValue) ? filterValue[0] : (filterValue as string | undefined)}
+                  options={filter.options || []}
+                  onChange={(value) => onFilterChange(filter.key, value)}
+                  placeholder={filter.placeholder || `Select ${filter.label.toLowerCase()}...`}
+                />
+              );
+            }
+            return null;
+          })}
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500 py-4">
+          No additional filters available. All filters are shown in the main filter bar.
+        </div>
+      )}
       
       {/* Applied Filters Chips */}
       <AppliedFiltersChips
@@ -310,11 +305,11 @@ function FilterSelect({ label, value, options, onChange, placeholder }: FilterSe
       <select
         value={selectedValue || ''}
         onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
       >
-        <option value="">{placeholder || 'Select...'}</option>
+        <option value="" className="text-gray-900">{placeholder || 'Select...'}</option>
         {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option key={opt.value} value={opt.value} className="text-gray-900">{opt.label}</option>
         ))}
       </select>
     </div>
