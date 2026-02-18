@@ -1,5 +1,8 @@
 """Analytics Studio - Main FastAPI application."""
 
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
