@@ -173,6 +173,8 @@ SQL_INJECTION_PATTERNS: List[str] = [
 ALLOWED_TABLES: Set[str] = {
     "sales_analytics",
     "public.sales_analytics",
+    "stock_gw",
+    "public.stock_gw",
 }
 
 # =============================================================================

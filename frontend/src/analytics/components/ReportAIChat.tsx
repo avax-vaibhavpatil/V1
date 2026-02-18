@@ -79,9 +79,13 @@ interface TimeState {
 }
 
 interface ReportAIChatProps {
-  filters?: FilterState;
+  reportId: string;
+  filters?: Record<string, unknown>;
   time?: TimeState;
   reportName?: string;
+  rows?: unknown[];
+  kpis?: unknown[];
+  aggregation?: string;
 }
 
 interface ChatApiResponse {
@@ -108,7 +112,7 @@ interface ChatApiResponse {
 // Suggested Questions
 // ============================================
 
-const SUGGESTED_QUESTIONS = [
+const SUGGESTED_QUESTIONS_SALES = [
   "Top 5 customers by sales",
   "Sales by state",
   "Who has negative margin?",
@@ -118,6 +122,21 @@ const SUGGESTED_QUESTIONS = [
   "Top distributors in Maharashtra",
   "Average order value",
 ];
+
+const SUGGESTED_QUESTIONS_STOCK = [
+  "Give me total fresh stock",
+  "Total stock value by branch",
+  "Top 10 branches by fresh stock value",
+  "Total dead stock and slow moving stock",
+  "Aging stock 3 months to 1 year total",
+  "Stock value by make",
+  "Good stock value and count by branch",
+  "Total inventory value and sales from stock",
+];
+
+function getSuggestedQuestions(reportId: string): string[] {
+  return reportId === 'stock-inventory' ? SUGGESTED_QUESTIONS_STOCK : SUGGESTED_QUESTIONS_SALES;
+}
 
 // ============================================
 // Markdown Parser
@@ -303,18 +322,19 @@ function PieChart({ data, title, total }: PieChartProps) {
 
 async function askQuestion(
   question: string,
-  filters?: FilterState,
+  reportId: string,
+  filters?: Record<string, unknown>,
   time?: TimeState
 ): Promise<ChatApiResponse> {
-  const response = await fetch('/api/v1/reports/sales-analytics/chat', {
+  const response = await fetch(`/api/v1/reports/${reportId}/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       question,
-      filters: filters || null,
-      time: time || null,
+      filters: filters ?? null,
+      time: time ?? null,
       includeSql: true,
       includeData: false,
     }),
@@ -332,7 +352,7 @@ async function askQuestion(
 // Main Component
 // ============================================
 
-export default function ReportAIChat({ filters, time, reportName = 'Sales Analytics' }: ReportAIChatProps) {
+export default function ReportAIChat({ reportId, filters, time, reportName = 'Sales Analytics' }: ReportAIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -375,8 +395,8 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
     setIsTyping(true);
     
     try {
-      // Call the AI API
-      const response = await askQuestion(text, filters, time);
+      // Call the AI API (endpoint depends on reportId: sales-analytics vs stock-inventory)
+      const response = await askQuestion(text, reportId, filters, time);
     
     // Add assistant message
     const assistantMessage: Message = {
@@ -521,7 +541,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                       Ask me anything about {reportName}
                     </p>
                     <p className="text-xs text-gray-400">
-                      I can query the database and analyze your sales data in real-time
+                      I can query the database and analyze your {reportId === 'stock-inventory' ? 'stock inventory' : 'sales'} data in real-time
                     </p>
                   </div>
                 )}
@@ -534,7 +554,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                       <span>Try asking</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {SUGGESTED_QUESTIONS.map((q, i) => (
+                      {getSuggestedQuestions(reportId).map((q, i) => (
                         <button
                           key={i}
                           onClick={() => handleSend(q)}
@@ -660,7 +680,7 @@ export default function ReportAIChat({ filters, time, reportName = 'Sales Analyt
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about your sales data..."
+                    placeholder={reportId === 'stock-inventory' ? 'Ask about your stock data...' : 'Ask about your sales data...'}
                     disabled={isTyping}
                     className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 transition-all"
                   />
