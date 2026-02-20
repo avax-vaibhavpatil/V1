@@ -32,6 +32,10 @@ from app.semantic.llm_prompts import (
     get_error_response,
     EXAMPLE_QA_PAIRS,
 )
+from app.semantic.stock_llm_prompts import (
+    build_complete_prompt_stock,
+    format_answer_prompt_stock,
+)
 
 logger = get_logger(__name__)
 
@@ -134,30 +138,39 @@ class LLMService:
     # =========================================================================
     
     async def generate_sql(
-        self, 
-        question: str, 
+        self,
+        question: str,
         filters: Optional[Dict] = None,
         include_examples: int = 5,
+        report_id: str = "sales-analytics",
     ) -> LLMResponse:
         """
         Generate SQL query from natural language question.
-        
+
         Args:
             question: User's natural language question
             filters: Current dashboard filters (optional)
             include_examples: Number of few-shot examples to include
-            
+            report_id: Report context - "sales-analytics" or "stock-inventory"
+
         Returns:
             LLMResponse with generated SQL in content field
         """
-        logger.info(f"Generating SQL for: {question[:100]}...")
-        
-        # Build prompts using semantic layer
-        system_prompt, user_prompt = build_complete_prompt(
-            question=question,
-            filters=filters,
-            include_examples=include_examples,
-        )
+        logger.info(f"Generating SQL for report={report_id}: {question[:100]}...")
+
+        # Build prompts using the semantic layer for the active report
+        if report_id == "stock-inventory":
+            system_prompt, user_prompt = build_complete_prompt_stock(
+                question=question,
+                filters=filters,
+                include_examples=include_examples,
+            )
+        else:
+            system_prompt, user_prompt = build_complete_prompt(
+                question=question,
+                filters=filters,
+                include_examples=include_examples,
+            )
         
         # Call LLM
         response = await self._call_llm(
@@ -186,25 +199,31 @@ class LLMService:
         question: str,
         sql: str,
         results: Any,
+        report_id: str = "sales-analytics",
     ) -> LLMResponse:
         """
         Format query results into a human-readable answer.
-        
+
         Args:
             question: Original user question
             sql: SQL query that was executed
             results: Query results (list of dicts)
-            
+            report_id: Report context for answer tone (sales vs stock)
+
         Returns:
             LLMResponse with formatted answer in content field
         """
-        logger.info(f"Formatting answer for: {question[:50]}...")
-        
-        # Build answer formatting prompt
-        user_prompt = format_answer_prompt(question, sql, results)
-        
-        # Shorter system prompt for answer formatting
-        system_prompt = """You are a helpful sales analytics assistant. 
+        logger.info(f"Formatting answer for report={report_id}: {question[:50]}...")
+
+        if report_id == "stock-inventory":
+            user_prompt = format_answer_prompt_stock(question, sql, results)
+            system_prompt = """You are a helpful stock inventory assistant.
+Format query results into clear, conversational responses.
+Use ₹ for currency, format large numbers with commas.
+Refer to stock/inventory data, not sales analytics. Be concise."""
+        else:
+            user_prompt = format_answer_prompt(question, sql, results)
+            system_prompt = """You are a helpful sales analytics assistant.
 Format query results into clear, conversational responses.
 Use ₹ for currency, format large numbers with commas.
 Be concise but informative. Use bullet points for lists.

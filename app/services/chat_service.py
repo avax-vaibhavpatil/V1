@@ -445,7 +445,9 @@ class ChatService:
         sql_start = time.time()
         
         try:
-            sql_response = await self.llm.generate_sql(question, filters)
+            sql_response = await self.llm.generate_sql(
+                question, filters, report_id=report_id
+            )
             
             if not sql_response.success:
                 self.failed_questions += 1
@@ -570,6 +572,7 @@ class ChatService:
                 question=question,
                 sql=sql,
                 results=results_for_formatting,
+                report_id=report_id,
             )
             
             if answer_response.success:

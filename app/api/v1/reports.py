@@ -853,20 +853,21 @@ async def chat_with_report(request: ChatRequest):
                 filters_dict["period"] = request.time.period
                 filters_dict["fiscalYear"] = request.time.fiscalYear
         
-        # Call chat service
+        # Call chat service (sales-analytics context)
         response = await chat_service.ask(
             question=request.question,
             filters=filters_dict,
             include_sql=request.includeSql,
             include_data=request.includeData,
+            report_id="sales-analytics",
         )
-        
+
         return response.to_dict()
-        
+
     except Exception as e:
         logger.error(f"Chat error: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Chat service error: {str(e)}"
         )
 
@@ -1490,6 +1491,90 @@ async def export_stock_inventory(request: StockInventoryTableRequest):
         except Exception as e:
             logger.error(f"Error exporting stock inventory data: {e}")
             raise HTTPException(status_code=500, detail=str(e))
+
+
+# --------------------------------------------
+# Stock Inventory AI Chat
+# --------------------------------------------
+
+class StockInventoryChatRequest(BaseModel):
+    """Request model for stock inventory AI chat."""
+    question: str
+    filters: Optional[StockInventoryFilterState] = None
+    time: Optional[TimeState] = None
+    includeSql: bool = True
+    includeData: bool = False
+
+
+@router.post("/stock-inventory/chat")
+async def chat_with_stock_inventory(request: StockInventoryChatRequest):
+    """
+    AI-powered chat for stock inventory natural language queries.
+
+    Ask questions about stock data: fresh stock, aging, slow moving, dead stock,
+    branch/company/make breakdowns. Uses stock_gw table semantic layer.
+
+    Examples:
+    - "Give me total fresh stock"
+    - "Total stock value by branch"
+    - "Top 10 branches by fresh stock value"
+    - "Total dead stock and slow moving stock"
+    """
+    from app.services.chat_service import get_chat_service
+
+    try:
+        chat_service = get_chat_service()
+
+        filters_dict = None
+        if request.filters or request.time:
+            filters_dict = {}
+            if request.filters:
+                if request.filters.branch:
+                    filters_dict["branch"] = request.filters.branch
+                if request.filters.company:
+                    filters_dict["company"] = request.filters.company
+                if request.filters.make and request.filters.make != "ALL":
+                    filters_dict["make"] = request.filters.make
+                if request.filters.stockCondition and request.filters.stockCondition != "ALL":
+                    filters_dict["stockCondition"] = request.filters.stockCondition
+                if request.filters.agingBucket and request.filters.agingBucket != "ALL":
+                    filters_dict["agingBucket"] = request.filters.agingBucket
+                if request.filters.inventoryCategory and request.filters.inventoryCategory != "ALL":
+                    filters_dict["inventoryCategory"] = request.filters.inventoryCategory
+            if request.time:
+                filters_dict["period"] = request.time.period
+                filters_dict["fiscalYear"] = request.time.fiscalYear
+
+        response = await chat_service.ask(
+            question=request.question,
+            filters=filters_dict,
+            include_sql=request.includeSql,
+            include_data=request.includeData,
+            report_id="stock-inventory",
+        )
+
+        return response.to_dict()
+
+    except Exception as e:
+        logger.error(f"Stock inventory chat error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chat service error: {str(e)}",
+        )
+
+
+@router.get("/stock-inventory/chat/health")
+async def stock_inventory_chat_health():
+    """Health check for stock inventory AI chat (same backend as sales chat)."""
+    from app.services.chat_service import get_chat_service
+    try:
+        health = await get_chat_service().health_check()
+        return {
+            "status": "healthy" if health["overall"] else "unhealthy",
+            "components": health,
+        }
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
 
 
 # ============================================

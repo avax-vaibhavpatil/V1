@@ -347,16 +347,14 @@ export default function ReportShell({ config }: ReportShellProps) {
         />
       )}
       
-      {/* AI Chat Assistant */}
+      {/* AI Chat Assistant - uses reportId to call correct chat endpoint (sales vs stock) */}
       <ReportAIChat
+        reportId={config.reportId}
+        filters={filterState.appliedFilters.filters as Record<string, unknown>}
+        time={filterState.appliedFilters.time}
+        reportName={config.title}
         rows={table?.rows || []}
         kpis={kpis?.cards || []}
-        filters={{
-          zone: filterState.appliedFilters.filters.zone as string | undefined,
-          state: filterState.appliedFilters.filters.state as string[] | undefined,
-          channelType: filterState.appliedFilters.filters.channelType as string | undefined,
-          entityType: filterState.appliedFilters.filters.entityType as string | undefined,
-        }}
         aggregation={filterState.appliedFilters.toggles.aggregation}
       />
     </div>
