@@ -9,6 +9,7 @@ import {
   ChevronRight,
   TrendingUp,
   Package,
+  MessageSquare,
 } from 'lucide-react';
 import { useProject } from '@/context/ProjectContext';
 
@@ -35,6 +36,7 @@ export default function Sidebar() {
         { path: '/visual-builder', icon: BarChart3, label: 'Visual Builder' },
         { path: '/calculations', icon: Calculator, label: 'Calculations' },
         { path: '/dashboards', icon: LayoutDashboard, label: 'Dashboards' },
+        { path: '/query-history', icon: MessageSquare, label: 'Query History' },
       ],
     },
     {

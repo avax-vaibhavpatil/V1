@@ -14,6 +14,7 @@ from app.api.v1 import (
     file_upload,
     dependency_safety,
     reports,
+    llm_metadata,
 )
 
 api_router = APIRouter()
@@ -33,4 +34,7 @@ api_router.include_router(
     dependency_safety.router, prefix="/dependency-safety", tags=["dependency-safety"]
 )
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(
+    llm_metadata.router, prefix="/llm-metadata", tags=["llm-metadata"]
+)
 

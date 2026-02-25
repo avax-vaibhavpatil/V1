@@ -9,6 +9,7 @@ import UploadPage from './pages/UploadPage';
 import VisualBuilderPage from './pages/VisualBuilderPage';
 import CalculationsPage from './pages/CalculationsPage';
 import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
+import QueryHistoryPage from './pages/QueryHistoryPage';
 import './App.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
             <Route path="upload" element={<UploadPage />} />
             <Route path="visual-builder" element={<VisualBuilderPage />} />
             <Route path="calculations" element={<CalculationsPage />} />
+            <Route path="query-history" element={<QueryHistoryPage />} />
             <Route path="dashboards" element={<DashboardPage />} />
             <Route path="dashboards/new" element={<DashboardEditorPage />} />
             <Route path="dashboards/:id" element={<DashboardEditorPage />} />

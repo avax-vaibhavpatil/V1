@@ -188,4 +188,19 @@ export interface DependencyUsage {
   warnings: string[];
 }
 
+export interface LLMMetadata {
+  id?: number;
+  user_question: string;
+  tokens_used: number | null;
+  created_at?: string;
+}
+
+export interface TokenStatistics {
+  total_queries: number;
+  total_tokens: number;
+  avg_tokens: number;
+  min_tokens: number;
+  max_tokens: number;
+}
+
 
